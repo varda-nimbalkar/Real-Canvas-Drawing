@@ -1,0 +1,155 @@
+/* HomePage.css */
+
+/* Background and layout */
+.homepage-container {
+  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  color: #333;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Titles */
+.homepage-title {
+  font-size: 3rem;
+  color: #fff;
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  animation: fadeInDown 0.8s ease-in-out;
+}
+
+.homepage-subtitle {
+  font-size: 1.2rem;
+  color: #f0f0f0;
+  margin-bottom: 30px;
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Input & Create Room Section */
+.create-room-form {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.room-input {
+  padding: 12px 18px;
+  border-radius: 30px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  width: 260px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s;
+}
+
+.room-input:focus {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.4);
+}
+
+.create-room-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: white;
+  font-size: 1rem;
+  padding: 12px 22px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.create-room-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 15px rgba(118, 75, 162, 0.5);
+}
+
+/* Rooms Section */
+.rooms-section {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 25px;
+  width: 85%;
+  max-width: 700px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 1s ease-in-out;
+}
+
+.rooms-title {
+  color: #fff;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+/* Individual Room Cards */
+.rooms-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+}
+
+.room-card {
+  background: white;
+  border-radius: 15px;
+  padding: 15px 20px;
+  width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.room-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.join-room-btn {
+  background: linear-gradient(135deg, #43cea2, #185a9d);
+  border: none;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.join-room-btn:hover {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #5fe0b5, #207cca);
+}
+
+/* No Rooms Message */
+.no-rooms-text {
+  color: #eee;
+  font-style: italic;
+}
+
+/* Error Message */
+.error-message {
+  color: #ff4b4b;
+  font-weight: 500;
+  margin-top: -20px;
+  margin-bottom: 15px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
