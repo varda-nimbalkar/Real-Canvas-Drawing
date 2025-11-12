@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
+import ChatBox from "../components/ChatBox";
 
 const RoomPage = () => {
   const { id } = useParams(); // Room ID from URL
@@ -24,8 +25,8 @@ const RoomPage = () => {
 
     // Resize canvas to fit window
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth * 0.9;
-      canvas.height = window.innerHeight * 0.8;
+      canvas.width = window.innerWidth * 0.65;
+      canvas.height = window.innerHeight * 0.7;
     };
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
@@ -41,7 +42,6 @@ const RoomPage = () => {
     // --- Listen for incoming drawing data ---
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-
       if (message.type === "DRAW") {
         const { x, y, color, size, tool } = message.payload;
         if (!context) return;
@@ -76,17 +76,14 @@ const RoomPage = () => {
 
   const handleMouseMove = (e) => {
     if (!isDrawing || !ctx) return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
     ctx.strokeStyle = tool === "eraser" ? "#FFFFFF" : color;
     ctx.lineWidth = size;
     ctx.lineTo(x, y);
     ctx.stroke();
 
-    // Send drawing data via WebSocket
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
@@ -103,53 +100,109 @@ const RoomPage = () => {
     ctx.closePath();
   };
 
-  // --- Clear Canvas ---
   const handleClear = () => {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-    // Broadcast clear event
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "CLEAR" }));
     }
   };
 
   return (
-    <div className="room-page">
-      <h2 className="text-center text-xl font-semibold mb-2">
-        🖌 Room ID: {id}
-      </h2>
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <h1 style={styles.title}>🎨 Collaborative Canvas Room</h1>
+        <p style={styles.subText}>Room ID: <strong>{id}</strong></p>
+      </div>
 
-      {/* Toolbar with brush/eraser/color/size/clear */}
-      <Toolbar
-        tool={tool}
-        setTool={setTool}
-        color={color}
-        setColor={setColor}
-        size={size}
-        setSize={setSize}
-        onClear={handleClear}
-      />
+      <div style={styles.layout}>
+        {/* 🎨 Left - Canvas Section */}
+        <div style={styles.canvasContainer}>
+          <Toolbar
+            tool={tool}
+            setTool={setTool}
+            color={color}
+            setColor={setColor}
+            size={size}
+            setSize={setSize}
+            onClear={handleClear}
+          />
+          <canvas
+            ref={canvasRef}
+            style={styles.canvas}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          />
+        </div>
 
-      {/* Canvas Board */}
-      <div className="flex justify-center mt-3">
-        <canvas
-          ref={canvasRef}
-          className="canvas-board"
-          style={{
-            border: "2px solid #ccc",
-            borderRadius: "10px",
-            backgroundColor: "#fff",
-            cursor: tool === "eraser" ? "not-allowed" : "crosshair",
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        />
+        {/* 💬 Right - Chat Section */}
+        <div style={styles.chatContainer}>
+          <ChatBox />
+        </div>
       </div>
     </div>
   );
+};
+
+// 🎨 Inline Styling for Better Layout
+const styles = {
+  page: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    background: "linear-gradient(135deg, #f0f2ff, #fff8ff)",
+    minHeight: "100vh",
+    padding: "20px",
+    fontFamily: "'Poppins', sans-serif",
+  },
+  header: {
+    textAlign: "center",
+    marginBottom: "20px",
+  },
+  title: {
+    fontSize: "2rem",
+    fontWeight: "700",
+    color: "#4f46e5",
+  },
+  subText: {
+    color: "#6b7280",
+    fontSize: "1rem",
+  },
+  layout: {
+    display: "flex",
+    gap: "30px",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    width: "95%",
+  },
+  canvasContainer: {
+    flex: 2,
+    background: "#ffffff",
+    borderRadius: "16px",
+    padding: "20px",
+    boxShadow: "0 4px 25px rgba(0,0,0,0.08)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  canvas: {
+    border: "2px solid #d1d5db",
+    borderRadius: "12px",
+    backgroundColor: "#fff",
+    cursor: "crosshair",
+    marginTop: "10px",
+  },
+  chatContainer: {
+    flex: 1,
+    background: "#ffffff",
+    borderRadius: "16px",
+    padding: "15px",
+    boxShadow: "0 4px 25px rgba(0,0,0,0.08)",
+    maxHeight: "80vh",
+    overflow: "hidden",
+  },
 };
 
 export default RoomPage;

@@ -12,6 +12,8 @@
 /* Set up a clean full-height layout */
 html,
 body {
+  @apply bg-sky-50 text-gray-800;
+
   @apply h-full bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 text-gray-900;
   font-family: 'Inter', 'Poppins', sans-serif;
   scroll-behavior: smooth;
