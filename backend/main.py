@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, rooms , chat
+
+from app.api import auth, chat, video_routes
+from app.api.rooms import router as room_router
+
 from app.core.database import Base, engine
 from app.websockets.router import router as websocket_router
 import os
@@ -23,10 +26,13 @@ app.add_middleware(
 
 # Routers
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-app.include_router(rooms.router, prefix="/rooms", tags=["Rooms"])
+
+# ✅ FIXED: Use room_router, correct prefix
+app.include_router(room_router, prefix="/rooms", tags=["Rooms"])
+
 app.include_router(websocket_router, tags=["WebSockets"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
-
+app.include_router(video_routes.router)
 
 @app.get("/")
 def root():

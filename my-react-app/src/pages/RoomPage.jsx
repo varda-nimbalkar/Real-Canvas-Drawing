@@ -1,11 +1,11 @@
-// src/pages/RoomPage.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import ChatBox from "../components/ChatBox";
+import VideoCall from "../components/VideoCall";
 
 const RoomPage = () => {
-  const { id } = useParams(); // Room ID from URL
+  const { id } = useParams();
   const canvasRef = useRef(null);
   const wsRef = useRef(null);
 
@@ -15,7 +15,21 @@ const RoomPage = () => {
   const [color, setColor] = useState("#000000");
   const [size, setSize] = useState(5);
 
-  // --- Initialize canvas + WebSocket ---
+  const [showChat, setShowChat] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+
+  // Chat toggle → close video
+  const handleChatToggle = () => {
+    setShowChat(!showChat);
+    setShowVideo(false);
+  };
+
+  // Video toggle → close chat
+  const handleVideoToggle = () => {
+    setShowVideo(!showVideo);
+    setShowChat(false);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
@@ -23,29 +37,22 @@ const RoomPage = () => {
     context.lineJoin = "round";
     setCtx(context);
 
-    // Resize canvas to fit window
     const resizeCanvas = () => {
       canvas.width = window.innerWidth * 0.65;
       canvas.height = window.innerHeight * 0.7;
     };
+
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // ✅ Connect WebSocket to backend
     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/room/${id}`);
     wsRef.current = ws;
 
-    ws.onopen = () => console.log("✅ Connected to WebSocket");
-    ws.onclose = () => console.log("❌ WebSocket Disconnected");
-    ws.onerror = (err) => console.error("⚠️ WebSocket Error:", err);
-
-    // --- Listen for incoming drawing data ---
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
+
       if (message.type === "DRAW") {
         const { x, y, color, size, tool } = message.payload;
-        if (!context) return;
-
         context.strokeStyle = tool === "eraser" ? "#FFFFFF" : color;
         context.lineWidth = size;
         context.lineTo(x, y);
@@ -57,21 +64,15 @@ const RoomPage = () => {
       }
     };
 
-    return () => {
-      ws.close();
-      window.removeEventListener("resize", resizeCanvas);
-    };
+    return () => ws.close();
   }, [id]);
 
-  // --- Drawing Handlers ---
   const handleMouseDown = (e) => {
     if (!ctx) return;
     setIsDrawing(true);
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
   };
 
   const handleMouseMove = (e) => {
@@ -79,44 +80,35 @@ const RoomPage = () => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
     ctx.strokeStyle = tool === "eraser" ? "#FFFFFF" : color;
     ctx.lineWidth = size;
     ctx.lineTo(x, y);
     ctx.stroke();
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
-        JSON.stringify({
-          type: "DRAW",
-          payload: { x, y, color, size, tool },
-        })
+        JSON.stringify({ type: "DRAW", payload: { x, y, color, size, tool } })
       );
     }
   };
 
   const handleMouseUp = () => {
-    if (!ctx) return;
     setIsDrawing(false);
-    ctx.closePath();
+    ctx?.closePath();
   };
 
   const handleClear = () => {
-    if (!ctx) return;
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "CLEAR" }));
-    }
+    wsRef.current.send(JSON.stringify({ type: "CLEAR" }));
   };
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>🎨 Collaborative Canvas Room</h1>
-        <p style={styles.subText}>Room ID: <strong>{id}</strong></p>
-      </div>
+      <h1 style={styles.title}>Collaborative Canvas Room</h1>
+      <p style={styles.sub}>Room ID: {id}</p>
 
       <div style={styles.layout}>
-        {/* 🎨 Left - Canvas Section */}
         <div style={styles.canvasContainer}>
           <Toolbar
             tool={tool}
@@ -127,6 +119,7 @@ const RoomPage = () => {
             setSize={setSize}
             onClear={handleClear}
           />
+
           <canvas
             ref={canvasRef}
             style={styles.canvas}
@@ -137,71 +130,153 @@ const RoomPage = () => {
           />
         </div>
 
-        {/* 💬 Right - Chat Section */}
-        <div style={styles.chatContainer}>
-          <ChatBox />
+        {/* ---- RIGHT: CHAT BUTTON ---- */}
+        <div style={styles.rightSide}>
+          <button style={styles.sideButton} onClick={handleChatToggle}>
+            💬 {showChat ? "Close Chat" : "Chat"}
+          </button>
+
+          {showChat && (
+            <div style={styles.chatPopup}>
+              <div style={styles.popupHeader}>
+                <h3>Chat</h3>
+                <button style={styles.closeBtn} onClick={handleChatToggle}>
+                  ✖
+                </button>
+              </div>
+              <ChatBox />
+            </div>
+          )}
+        </div>
+
+        {/* ---- LEFT: VIDEO BUTTON ---- */}
+        <div style={styles.leftSide}>
+          <button style={styles.sideButtonVideo} onClick={handleVideoToggle}>
+            🎥 {showVideo ? "Close Video" : "Video Call"}
+          </button>
+
+          {showVideo && (
+            <div style={styles.videoPopup}>
+              <div style={styles.popupHeader}>
+                <h3>Video Call</h3>
+                <button style={styles.closeBtn} onClick={handleVideoToggle}>
+                  ✖
+                </button>
+              </div>
+              <VideoCall roomId={id} />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// 🎨 Inline Styling for Better Layout
+// ------------------ STYLES ------------------
+
 const styles = {
   page: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #f0f2ff, #fff8ff)",
-    minHeight: "100vh",
+    background: "#f5f7ff",
+    height: "100vh",
     padding: "20px",
-    fontFamily: "'Poppins', sans-serif",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "20px",
+    fontFamily: "Poppins, sans-serif",
   },
   title: {
-    fontSize: "2rem",
+    textAlign: "center",
+    fontSize: "28px",
     fontWeight: "700",
     color: "#4f46e5",
   },
-  subText: {
-    color: "#6b7280",
-    fontSize: "1rem",
+  sub: {
+    textAlign: "center",
+    marginBottom: "20px",
+    color: "#666",
   },
+
   layout: {
     display: "flex",
-    gap: "30px",
     justifyContent: "center",
-    alignItems: "flex-start",
-    width: "95%",
+    position: "relative",
+    width: "100%",
   },
+
   canvasContainer: {
-    flex: 2,
-    background: "#ffffff",
+    background: "#fff",
     borderRadius: "16px",
     padding: "20px",
-    boxShadow: "0 4px 25px rgba(0,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
   },
+
   canvas: {
-    border: "2px solid #d1d5db",
-    borderRadius: "12px",
-    backgroundColor: "#fff",
-    cursor: "crosshair",
+    border: "2px solid #ccc",
     marginTop: "10px",
+    borderRadius: "12px",
+    cursor: "crosshair",
   },
-  chatContainer: {
-    flex: 1,
-    background: "#ffffff",
+
+  /* Right Chat Section */
+  rightSide: {
+    position: "absolute",
+    right: "20px",
+    top: "20px",
+  },
+
+  /* Left Video Section */
+  leftSide: {
+    position: "absolute",
+    left: "20px",
+    top: "20px",
+  },
+
+  sideButton: {
+    background: "#4f46e5",
+    color: "#fff",
+    padding: "10px 16px",
+    borderRadius: "30px",
+    border: "none",
+    cursor: "pointer",
+    marginBottom: "10px",
+  },
+
+  sideButtonVideo: {
+    background: "#ec4899",
+    color: "#fff",
+    padding: "10px 16px",
+    borderRadius: "30px",
+    border: "none",
+    cursor: "pointer",
+    marginBottom: "10px",
+  },
+
+  chatPopup: {
+    width: "300px",
+    height: "420px",
+    background: "#fff",
     borderRadius: "16px",
-    padding: "15px",
-    boxShadow: "0 4px 25px rgba(0,0,0,0.08)",
-    maxHeight: "80vh",
-    overflow: "hidden",
+    padding: "10px",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.2)",
+  },
+
+  videoPopup: {
+    width: "300px",
+    height: "420px",
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "10px",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.2)",
+  },
+
+  popupHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "10px",
+  },
+
+  closeBtn: {
+    background: "transparent",
+    border: "none",
+    fontSize: "18px",
+    cursor: "pointer",
   },
 };
 
